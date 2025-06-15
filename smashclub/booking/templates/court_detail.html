@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block content %}
+<h1>{{ court.name }}</h1>
+<img src="{{ court.image.url }}" alt="Court image" style="max-width:500px;">
+<p>{{ court.description }}</p>
+<a href="{% url 'booking:court_list' %}" class="btn btn-primary">Back to Courts</a>
+<br>
+<br>
+
+
+<h3>Bookings for this Court</h3>
+
+{% if bookings %}
+    <ul>
+        {% for booking in bookings %}
+            <li>
+                <strong>{{ booking.user.username }}</strong> - {{ booking.start_time.date }}: {{ booking.start_time.time }} to {{ booking.end_time.time }}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No bookings available for this court.</p>
+{% endif %}
+
+{% endblock %}

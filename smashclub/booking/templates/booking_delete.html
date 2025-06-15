@@ -1,0 +1,13 @@
+<!-- filepath: /home/riccardo/Documents/smash_club2/smashclub/booking/templates/booking_delete.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Delete Booking</h1>
+<p>Are you sure you want to delete the booking for <strong>{{ booking.court }}</strong> at <strong>{{ booking.start_time|date:"Y-m-d H:i" }}</strong>?</p>
+
+<form method="POST">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">Delete</button>
+  <a href="{% url 'booking:my_bookings' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

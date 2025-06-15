@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% load crispy_forms_tags %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+{% block content %}
+<h1>Welcome to Smash Club</h1>
+<p>Smash Club is a premier destination for tennis enthusiasts. Whether you're a beginner or a seasoned player, we have something for everyone.</p>
+<br>
+<div class="d-flex justify-content-center">
+    <img src="{% static 'imgs/tennis_court.jpg' %}" alt="Tennis Court" class="img-fluid" style="max-width: 600px;">
+</div>
+<br>
+<p>Join us for exciting matches, training sessions, and community events. Our state-of-the-art facilities and friendly staff are here to ensure you have the best experience possible.</p>
+<p>Explore our website to learn more about our courts, booking system, and membership options. We look forward to welcoming you to Smash Club!</p>
+<br>
+<div class="d-flex justify-content-center">
+    <a href="{% url 'booking:booking_calendar' %}" class="btn btn-primary">View Bookings</a>
+    <a href="{% url 'booking:court_list' %}" class="btn btn-primary ml-2">View Courts</a>
+</div>
+<br>
+
+
+{% endblock %}

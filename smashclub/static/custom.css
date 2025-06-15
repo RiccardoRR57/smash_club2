@@ -1,0 +1,63 @@
+/* Custom color palette */
+:root {
+    --primary-blue-navy: #1a237e;
+    --secondary-dark-yellow: #ffb300;
+    --text-light: #ffffff;
+    --text-dark: #212121;
+    --background-light: #f5f5f5;
+}
+
+/* Override Bootstrap’s bg-primary */
+nav.bg-primary {
+    background-color: var(--primary-blue-navy) !important;
+}
+
+.custom-bg-primary {
+    background-color: var(--primary-blue-navy) !important;
+}
+
+/* Override navbar text color when dark */
+.navbar.navbar-dark .navbar-nav .nav-link {
+    color: var(--text-light) !important;
+}
+
+/* Override .btn-primary */
+.btn-primary {
+    background-color: var(--secondary-dark-yellow) !important;
+    color: var(--primary-blue-navy) !important;
+}
+
+/* Modify jumbotron background */
+.jumbotron {
+    background-color: var(--primary-blue-navy) !important;
+    color: var(--text-light) !important;
+}
+
+/* Basic page styling */
+body {
+    background-color: var(--background-light);
+    color: var(--text-dark);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Links */
+a {
+    color: var(--primary-blue-navy);
+    text-decoration: underline;
+}
+
+a:hover {
+    color: var(--secondary-dark-yellow);
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.flex-grow-1 {
+    flex-grow: 1; /* Pushes the footer to the bottom */
+}

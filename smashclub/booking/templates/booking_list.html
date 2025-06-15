@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% load crispy_forms_tags %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> 
+
+{% block content %} 
+
+<h1>My Bookings</h1>
+
+<h3>Past Bookings</h3>
+{% if past_bookings %}
+  <ul>
+    {% for booking in past_bookings %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ booking }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No past bookings found.</p>
+{% endif %}
+
+<h3>Future Bookings</h3>
+<p>Bookings can be cancelled up to 24 hours before the scheduled time.</p>
+
+{% if future_bookings %}
+  <ul>
+    {% for booking in future_bookings %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <span>{{ booking }}</span>
+          <ul class="mt-2 mb-0">
+        {% for invitation in booking.invited_players.all %}
+          <li>{{ invitation.user.username }} - {{ invitation.status }}</li>
+        {% endfor %}
+          </ul>
+        </div>
+        <div class="d-flex flex-column align-items-end">
+          <form method="get" action="{% url 'booking:invite_user' booking.id %}" style="margin: 0 0 5px 0;">
+        <button type="submit" class="btn btn-primary btn-sm">Invite User</button>
+          </form>
+          <form method="get" action="{% url 'booking:booking_delete' booking.id %}" style="margin: 0;">
+        <button type="submit" class="btn btn-danger btn-sm" 
+          {% if booking.cancellable_until < now  and not 'teachers' in user.groups.all.0.name and not user.is_staff %}disabled{% endif %}
+        >Delete</button>
+          </form>
+        </div>
+      </li>
+      
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No future bookings found.</p>
+{% endif %}
+
+<h3>Invitations</h3>
+{% if invitations %}
+  <ul>
+    {% for invitation in invitations %}
+      {% if invitation.booking.start_time > now %}
+        {% if invitation.status == 'pending' %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ invitation }}</span>
+            <div class="d-flex">
+            <form method="get" action="{% url 'booking:invitation_accept' invitation.id %}" style="margin-right: 5px;">
+              <button type="submit" class="btn btn-success btn-sm">Accept</button>
+            </form>
+            <form method="get" action="{% url 'booking:invitation_decline' invitation.id %}" style="margin: 0;">
+              <button type="submit" class="btn btn-danger btn-sm">Decline</button>
+            </form>
+            </div>
+          </li>
+          {% else %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ invitation }}</span>
+            <span class="badge badge-secondary">{{ invitation.status }}</span>
+          </li>
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No invitations found.</p>
+{% endif %}
+
+{% endblock %}

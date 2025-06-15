@@ -1,0 +1,66 @@
+<!-- filepath: /home/riccardo/Documents/smash_club2/smashclub/booking/templates/calendar_view.html -->
+{% extends "base.html" %}
+{% load dict_filters %}
+
+{% block content %}
+<h1>Calendar View</h1>
+
+{% for court in courts %}
+  <h3>{{ court.name }}</h3>
+  <table class="table table-bordered" style="table-layout: fixed; width: 100%;">
+    <thead>
+      <tr>
+        <th>Hour</th>
+        {% for d in day_list %}
+          <th>{{ d|date:"M d" }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for hour in hours_list %}
+        <tr>
+          <td>{{ hour }}:00</td>
+          {% for d in day_list %}
+            {% with date_str=d|date:"Y-m-d" court_str=court.id|stringformat:"s" hour_str=hour|stringformat:"02d" %}
+              {% with key=court_str|add:"-"|add:date_str|add:"-"|add:hour_str %}
+                {% if past_hours|dict_get:key %}
+                  <td class="bg-secondary text-muted">Past</td>
+                {% else %}
+                  {% with booking=booked_data|dict_get:key %}
+                    {% if booking %}
+                      {% if user.is_authenticated and booking.user == user %}
+                        <td class="bg-success">
+                        <form method="GET" action="{% url 'booking:booking_delete' booking.id %}" style="display:inline;">
+                          <button type="submit" class="btn btn-danger btn-sm" 
+                            {% if booking.cancellable_until < now  and not 'teachers' in user.groups.all.0.name and not user.is_staff %}disabled{% endif %}
+                          >Delete</button>
+                        </form>
+                        </td>
+                      {% else %}
+                        <td class="bg-danger">Booked</td>
+                      {% endif %}
+                    {% else %}
+                      <td class="bg-primary">
+                        {% if user.is_authenticated %}
+                          <form method="GET" action="{% url 'booking:booking_create' %}">
+                            <input type="hidden" name="court_id" value="{{ court.id }}">
+                            <input type="hidden" name="date" value="{{ d|date:'Y-m-d' }}">
+                            <input type="hidden" name="hour" value="{{ hour_str }}">
+                            <button class="btn btn-primary btn-sm">Book</button>
+                          </form>
+                        {% else %}
+                          Available
+                        {% endif %}
+                      </td>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+              {% endwith %}
+            {% endwith %}
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endfor %}
+{% endblock %}
