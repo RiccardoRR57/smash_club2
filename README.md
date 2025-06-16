@@ -73,6 +73,7 @@ python manage.py runserver
 
 ## Project Structure
 
+<pre>
 smashclub/
 ├── booking/                 # Booking management app
 │   ├── models.py           # Court, Booking, InvitedPlayer models
@@ -93,6 +94,7 @@ smashclub/
     ├── urls.py
     ├── routing.py          # WebSocket routing
     └── consumers.py        # WebSocket consumers
+</pre>
 
 ## Usage
 
