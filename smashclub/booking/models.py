@@ -52,7 +52,7 @@ class Booking(models.Model):
         """Invite a player to this booking."""
         if self.invited_players.filter(user=user).exists():
             raise ValueError(f"{user.username} is already invited.")
-        InvitedPlayer.objects.create(booking=self, user=user)
+        return InvitedPlayer.objects.create(booking=self, user=user)
 
     def cancel_invitation(self, player):
         """Cancel an invitation for a player."""
@@ -75,7 +75,6 @@ class Booking(models.Model):
         self.start_time = self.start_time.replace(minute=0, second=0, microsecond=0)
         self.end_time = self.start_time + timedelta(hours=1)
         self.cancellable_until = self.start_time - timedelta(days=1)
-        print(f"Booking created by {self.user.username} for court {self.court.name} from {self.start_time} to {self.end_time}. Cancellable until {self.cancellable_until}.")
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

@@ -3,6 +3,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
 from braces.views import GroupRequiredMixin, SuperuserRequiredMixin 
 from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
@@ -59,6 +60,11 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
     template_name = 'booking_form.html'
     success_url = reverse_lazy('booking:my_bookings')
     form_class = CreateBookingForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def get_success_url(self):
         url = super().get_success_url()
@@ -216,22 +222,33 @@ def decline_invitation(request, pk):
 
 @login_required
 def invite_user(request, booking_id):
-    player_id = request.GET.get('player_id')  # Get the player ID from the URL
+    player_id = request.GET.get('player_id')
 
     if not player_id:
-        # Redirect to the select_player page with the next parameter set to invite_user
         return redirect(f"{reverse_lazy('booking:select_player')}?next={reverse_lazy('booking:invite_user', kwargs={'booking_id': booking_id})}")
 
-    booking = Booking.objects.get(id=booking_id)  # Get the booking by ID
-    user = User.objects.get(id=player_id)  # Get the user by ID
+    try:
+        booking = Booking.objects.get(id=booking_id)
+        user = User.objects.get(id=player_id)
 
-    # Create an invitation for the selected user
-    invitation = InvitedPlayer.objects.create(
-        booking=booking,
-        user=user,
-        status='pending',
-    )
-    return redirect('booking:my_bookings')  # Redirect to the user's bookings page
+        # Check if already invited
+        if InvitedPlayer.objects.filter(booking=booking, user=user).exists():
+            messages.error(request, f'{user.username} is already invited to this booking.')
+            return redirect('booking:my_bookings')
+
+        # Check if trying to invite themselves
+        if booking.user == user:
+            messages.error(request, 'You cannot invite yourself.')
+            return redirect('booking:my_bookings')
+
+        # Create invitation
+        InvitedPlayer.objects.create(booking=booking, user=user, status='pending')
+        messages.success(request, f'{user.username} has been invited successfully!')
+
+    except (Booking.DoesNotExist, User.DoesNotExist):
+        messages.error(request, 'Something went wrong. Please try again.')
+
+    return redirect('booking:my_bookings')
 
 ## teacher exclusive views
 class CreateRecurringBookingView(GroupRequiredMixin, CreateView):
@@ -240,6 +257,11 @@ class CreateRecurringBookingView(GroupRequiredMixin, CreateView):
     template_name = 'create_recurring_booking.html'
     success_url = reverse_lazy('booking:my_bookings')
     form_class = RecurringBookingForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         form.instance.user = self.request.user

@@ -88,36 +88,79 @@
   <p>No invitations found.</p>
 {% endif %}
 
-{% if request.GET.b_added or request.GET.b_deleted %}
 
+<!-- Universal Modal for all notifications -->
 <div id="info" class="modal fade" tabindex="-1" role="dialog">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Booking Status</h5>
+      <div class="modal-header" id="modal-header">
+        <h5 class="modal-title" id="modal-title">Notification</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body">
-        {% if request.GET.b_added %}
-          <p>Your booking has been added successfully.</p>
-        {% elif request.GET.b_deleted %}
-          <p>Your booking has been deleted successfully.</p>
-        {% endif %}
+      <div class="modal-body" id="modal-body">
+        <!-- Message will be inserted here -->
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
-</div> 
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+
 <script>
-  $(document).ready(function(){
-      $("#info").modal('show');
-  });
+$(document).ready(function(){
+    let showModal = false;
+    let modalTitle = 'Notification';
+    let modalMessage = '';
+    let headerClass = 'modal-header';
+
+    // Check for URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const bAdded = urlParams.get('b_added');
+    const bDeleted = urlParams.get('b_deleted');
+
+    if (bAdded === 'true') {
+        showModal = true;
+        modalTitle = 'Success';
+        modalMessage = 'Your booking has been added successfully.';
+        headerClass = 'modal-header bg-success text-white';
+    } else if (bDeleted === 'true') {
+        showModal = true;
+        modalTitle = 'Success';
+        modalMessage = 'Your booking has been deleted successfully.';
+        headerClass = 'modal-header bg-success text-white';
+    }
+
+    // Check for Django messages
+    {% if messages %}
+        {% for message in messages %}
+            showModal = true;
+            {% if message.tags == 'error' %}
+                modalTitle = 'Error';
+                headerClass = 'modal-header bg-danger text-white';
+            {% else %}
+                modalTitle = 'Success';
+                headerClass = 'modal-header bg-success text-white';
+            {% endif %}
+            modalMessage = '{{ message|escapejs }}';
+        {% endfor %}
+    {% endif %}
+
+    // Show modal if needed
+    if (showModal) {
+        document.getElementById('modal-title').textContent = modalTitle;
+        document.getElementById('modal-body').innerHTML = modalMessage;
+        document.getElementById('modal-header').className = headerClass;
+        $("#info").modal('show');
+    }
+});
 </script>
 
-{% endif %}
 
 {% endblock %}
