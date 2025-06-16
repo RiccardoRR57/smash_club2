@@ -18,23 +18,24 @@ class CreateBookingForm(forms.ModelForm):
         required=True,
     )
 
-    start_time = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        label="Time",
+    HOURS_CHOICES = [(hour, f"{hour}:00") for hour in range(8, 22)]  # Hours from 08:00 to 21:00
+
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Start Date",
         required=True,
     )
 
-     # Add a field for inviting players
-    invited_players = forms.ModelMultipleChoiceField(
-        queryset=User.objects.exclude(is_superuser=True),  # Exclude admin users
-        widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
-        label="Invite Players",
-        required=False,
+    hour = forms.ChoiceField(
+        choices=HOURS_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Start Hour",
+        required=True,
     )
 
     class Meta:
         model = Booking
-        fields = ['court', 'start_time', 'invited_players']
+        fields = ['court', 'date', 'hour']
 
 class RecurringBookingForm(forms.ModelForm):
     helper = FormHelper()
@@ -50,9 +51,18 @@ class RecurringBookingForm(forms.ModelForm):
         required=True,
     )
 
-    start_time = forms.DateTimeField(
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        label="Time",
+    HOURS_CHOICES = [(hour, f"{hour}:00") for hour in range(8, 22)]  # Hours from 08:00 to 21:00
+
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Start Date",
+        required=True,
+    )
+
+    hour = forms.ChoiceField(
+        choices=HOURS_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Start Hour",
         required=True,
     )
 
@@ -61,28 +71,31 @@ class RecurringBookingForm(forms.ModelForm):
         label="Repeat Until",
         required=True,
     )
-    
-    invited_players = forms.ModelMultipleChoiceField(
-        queryset=User.objects.exclude(is_superuser=True).exclude(groups__name='teachers'),  # Exclude admin users
-        widget=forms.SelectMultiple(attrs={'class': 'form-control'}),
-        label="Invite Players",
-        required=False,
-    )
-
     class Meta:
         model = Booking
-        fields = ['court', 'start_time', 'invited_players', 'until']
+        fields = ['court', 'date', 'hour', 'until']
 
-class CreateInvitationForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        exclude_users = kwargs.pop('exclude_users', None)
-        super().__init__(*args, **kwargs)
-        if exclude_users:
-            self.fields['user'].queryset = User.objects.exclude(id__in=[user.id for user in exclude_users])
+class CreateCourtForm(forms.ModelForm):
+    helper = FormHelper()
+    helper.form_id = "add_court_crispy_form"
+    helper.form_method = "POST"
+    helper.add_input(Submit("submit", "Add Court", css_class="btn btn-primary"))
+    helper.form_class = "form-horizontal"
 
     class Meta:
-        model = InvitedPlayer
-        fields = ['user']
+        model = Court
+        fields = ['name','surface', 'description', 'is_active', 'image']
         widgets = {
-            'user': forms.Select(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'surface': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'image': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
         }
+
+class AssignTeacherForm(forms.Form):
+    user = forms.ModelChoiceField(
+        queryset=User.objects.filter(groups__name='players').exclude(groups__name='teachers'),
+        label="Select User",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )

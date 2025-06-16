@@ -20,7 +20,7 @@ class Court(models.Model):
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
-    image = models.ImageField(upload_to='courts/', blank=True, null=True)
+    image = models.ImageField(upload_to='courts/', blank=False, null=False)
 
     def __str__(self):
         return f'{self.name} ({self.get_surface_display()})'
@@ -69,7 +69,7 @@ class Booking(models.Model):
             raise ValueError("Booking start time must be on the hour (e.g., 14:00, not 14:15).")
         if self.start_time.hour < 8 or self.start_time.hour > 21:
             raise ValueError("Bookings can only be made between 08:00 and 21:00.")
-        if not self.user.groups.filter(name='teachers').exists() and self.start_time > today + timedelta(days=7):
+        if not (self.user.groups.filter(name='teachers').exists() or self.user.is_staff) and self.start_time > today + timedelta(days=7):
             raise ValueError("Bookings can only be made up to 7 days in advance for regular users.")
 
         self.start_time = self.start_time.replace(minute=0, second=0, microsecond=0)

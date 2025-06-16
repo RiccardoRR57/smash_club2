@@ -17,8 +17,12 @@ urlpatterns = [
 
     path('invitation_accept/<int:pk>/', views.accept_invitation, name='invitation_accept'),
     path('invitation_decline/<int:pk>/', views.decline_invitation, name='invitation_decline'),
-    path('invite_user/<int:booking_id>/', views.InvitationCreateView.as_view(), name='invite_user'),
+    path('invite_user/<int:booking_id>/', views.invite_user, name='invite_user'),
 
-    path('teacher_dashboard/', views.TeacherDashboardView.as_view(), name='teacher_dashboard'),
-    path('admin_dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('recurring_booking/', views.CreateRecurringBookingView.as_view(), name='recurring_booking'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('add_court/', views.CreateCourtView.as_view(), name='add_court'),
+    path('set_teachers/', views.assign_teacher, name='assign_teacher'),
+
+    path('select-player/', views.select_player, name='select_player'),
 ]

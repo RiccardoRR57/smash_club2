@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Match: {{ match.player1 }} vs {{ match.player2 }}</h1>
+    <p class="text-center">Best of {{ match.best_of }}</p>
+
+    <div class="mt-4">
+        <h2>Current Score:</h2>
+        <table class="table table-bordered table-striped text-center">
+            <thead class="thead-light">
+                <tr>
+                    <th></th>
+                    <th>{{ match.player1 }}</th>
+                    <th>{{ match.player2 }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Sets</strong></td>
+                    <td id="set_pl1">{{ match.set_player1 }}</td>
+                    <td id="set_pl2">{{ match.set_player2 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Games</strong></td>
+                    <td id="game_pl1">{{ match.game_player1 }}</td>
+                    <td id="game_pl2">{{ match.game_player2 }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Points</strong></td>
+                    <td id="point_pl1">{{ match.point_player1 }}</td>
+                    <td id="point_pl2">{{ match.point_player2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if user.is_staff %}
+        <div class="mt-4">
+            <h2>Actions:</h2>
+            <button id="add-point-pl1" class="btn btn-success" {% if match.winner or not match.is_live %}disabled{% endif %}>
+                Add Point to {{ match.player1 }}
+            </button>
+            <button id="add-point-pl2" class="btn btn-success" {% if match.winner or not match.is_live %}disabled{% endif %}>
+                Add Point to {{ match.player2 }}
+            </button>
+            <button id="start-match" class="btn btn-primary" {% if match.winner or match.is_live %}disabled{% endif %}>
+                Start Match
+            </button>
+        </div>
+    {% endif %}
+
+    <div id="winner-announcement" class="mt-4 text-center font-weight-bold" style="font-size: 1.5em; color: green;">
+        {% if match.winner %}
+            {{ match.get_winner }} won the match!
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    const matchId = "{{ match.id }}";  // Match ID passed from the view
+    const ws = new WebSocket(`ws://${window.location.host}/ws/match/${matchId}/`);
+
+    ws.onopen = function() {
+        console.log("WebSocket connection opened");
+    };
+
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        console.log("WebSocket message received:", data);
+
+        if (data.type === 'match_started') {
+            console.log("Match started:", data);
+            // Enable buttons when the match starts
+            document.getElementById('start-match').disabled = true;
+            document.getElementById('add-point-pl1').disabled = false;
+            document.getElementById('add-point-pl2').disabled = false;
+        } else if (data.type === 'match_score_update') {
+            const score = data.score;
+            document.getElementById('set_pl1').innerText = score.set_pl1;
+            document.getElementById('set_pl2').innerText = score.set_pl2;
+            document.getElementById('game_pl1').innerText = score.game_pl1;
+            document.getElementById('game_pl2').innerText = score.game_pl2;
+            document.getElementById('point_pl1').innerText = score.point_pl1;
+            document.getElementById('point_pl2').innerText = score.point_pl2;
+        }
+        else if (data.type === 'match_ended') {
+            const winnerAnnouncement = document.getElementById('winner-announcement');
+            winnerAnnouncement.innerText = `${data.winner} wins the match!`;
+            winnerAnnouncement.style.color = "green";
+            // Disable buttons when the match ends
+            document.getElementById('add-point-pl1').disabled = true;
+            document.getElementById('add-point-pl2').disabled = true;
+        }
+    };
+
+    document.getElementById('add-point-pl1').addEventListener('click', function() {
+        ws.send(JSON.stringify({
+            action: "add_point",
+            player: "pl1"
+        }));
+    });
+
+    document.getElementById('add-point-pl2').addEventListener('click', function() {
+        ws.send(JSON.stringify({
+            action: "add_point",
+            player: "pl2"
+        }));
+    });
+
+    document.getElementById('start-match').addEventListener('click', function() {
+        ws.send(JSON.stringify({
+            action: "start_match"
+        }));
+    });
+</script>
+{% endblock %}

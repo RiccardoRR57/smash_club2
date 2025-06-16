@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Dashboard</h1>
+
+    <div class="row">
+        <!-- Buttons visible to all users -->
+                <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Match List</h5>
+                    <p class="card-text">View all matches and their details.</p>
+                    <a href="{% url 'matches:list' %}" class="btn btn-primary">Go to Match List</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">My Bookings</h5>
+                    <p class="card-text">View and manage your bookings.</p>
+                    <a href="{% url 'booking:my_bookings' %}" class="btn btn-primary">Go to My Bookings</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">New Booking</h5>
+                    <p class="card-text">Create a new booking for a court.</p>
+                    <a href="{% url 'booking:booking_create' %}" class="btn btn-primary">Create Booking</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Button visible only to teachers -->
+        {% if 'teachers' in user.groups.all.0.name or user.is_staff %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">New Recurring Booking</h5>
+                    <p class="card-text">Set up recurring bookings for your classes.</p>
+                    <a href="{% url 'booking:recurring_booking' %}" class="btn btn-primary">Create Recurring Booking</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Buttons visible only to admins -->
+        {% if user.is_staff %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Add Teacher</h5>
+                    <p class="card-text">Add a new teacher to the system.</p>
+                    <a href="{% url 'booking:assign_teacher' %}" class="btn btn-primary">Add Teacher</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Add Court</h5>
+                    <p class="card-text">Add a new court to the system.</p>
+                    <a href="{% url 'booking:add_court' %}" class="btn btn-primary">Add Court</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if request.GET.teacher_added %}
+
+<div id="info" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Teacher added</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Teacher has been successfully added.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div> 
+<script>
+  $(document).ready(function(){
+      $("#info").modal('show');
+  });
+</script>
+
+{% endif %}
+
+{% endblock %}

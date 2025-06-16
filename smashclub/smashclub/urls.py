@@ -24,9 +24,10 @@ from .views import *
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('bookings/', include('booking.urls')),
-    path('accounts/', include('django.contrib.auth.urls')), # Includes login, logout, password change/reset
-    path('accounts/register/', RegisterView.as_view(), name='register'), # Redirect profile to bookings
+    path('', include('django.contrib.auth.urls')), # Includes login, logout, password change/reset
+    path('register/', RegisterView.as_view(), name='register'), # Redirect profile to bookings
     path('', home, name='home'), # Redirect root to your 'bookings' app
+    path('matches/', include('matches.urls')),  # Include match app URLs
 ]
 
 if settings.DEBUG:

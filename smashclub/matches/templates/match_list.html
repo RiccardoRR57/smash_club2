@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Match List</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Player 1</th>
+            <th>Player 2</th>
+            <th>Score</th>
+            <th>Winner</th>
+            <th>Live</th>
+            <th>Actions</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        {% for match in matches %}
+        <tr>
+            <td>{{ match.player1 }}</td>
+            <td>{{ match.player2 }}</td>
+            <td>{{ match.get_score }}</td>
+            <td>{{ match.get_winner }}</td>
+            <td>
+                {% if match.is_live %}
+                    <span class="badge bg-success">Live</span>
+                {% else %}
+                    <span class="badge bg-secondary">Not Live</span>
+                {% endif %}
+            <td>
+                <a href="{% url 'matches:details' match.id %}" class="btn btn-primary">Details</a>
+                
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if user.is_staff %}
+    <div style="margin-top: 20px; text-align: center;">
+        <a href="{% url 'matches:create' %}" class="btn btn-primary" style="text-decoration: none; padding: 10px 20px; background-color: #007bff; color: white; border-radius: 5px;">Create New Match</a>
+    </div>
+{% endif %}
+
+{% endblock %}

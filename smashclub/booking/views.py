@@ -1,6 +1,9 @@
-from django.views.generic import ListView, CreateView, DetailView, DeleteView, TemplateView
+from django.views.generic import ListView, CreateView, DetailView, DeleteView
+from django.contrib.auth.models import Group
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from braces.views import GroupRequiredMixin, SuperuserRequiredMixin 
 from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
 from django.utils.timezone import now
@@ -35,6 +38,20 @@ class CourtDetailView(DetailView):
         context['bookings'] = bookings
         return context
 
+class CreateCourtView(SuperuserRequiredMixin, CreateView):
+    model = Court
+    template_name = 'court_form.html'
+    success_url = reverse_lazy('booking:court_list')
+    form_class = CreateCourtForm
+
+    def get_success_url(self):
+        return super().get_success_url() + '?court_added=true'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Add Court'
+        return context
+
 ## bookings management views
 
 class BookingCreateView(LoginRequiredMixin, CreateView):
@@ -42,6 +59,10 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
     template_name = 'booking_form.html'
     success_url = reverse_lazy('booking:my_bookings')
     form_class = CreateBookingForm
+
+    def get_success_url(self):
+        url = super().get_success_url()
+        return f"{url}?b_added=true"
 
     def get_initial(self):
         """Pre-fill the form fields based on GET parameters."""
@@ -54,22 +75,34 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
             try:
                 court = Court.objects.get(id=court_id)
                 initial['court'] = court
-                initial['start_time'] = f"{date} {hour}:00"
+                initial['date'] = datetime.strptime(date, '%Y-%m-%d').date()  # Convert string to date
+                initial['hour'] = int(hour)  # Convert string to integer
             except Court.DoesNotExist:
                 print(f"Invalid court ID: {court_id}")  # Handle invalid court_id gracefully
         return initial
 
     def form_valid(self, form):
-        # Save the booking instance
         form.instance.user = self.request.user
+        date = form.cleaned_data.get('date')  # Get the selected date
+        hour = int(form.cleaned_data.get('hour'))  # Get the selected hour
+
+        # Construct the start_time dynamically using the selected date and hour
+        naive_start_time = datetime.combine(date, datetime.min.time()).replace(hour=hour)
+        start_time = timezone.make_aware(naive_start_time)
+
+        form.instance.start_time = start_time
+        form.instance.end_time = start_time + timedelta(hours=1)
+        form.instance.cancellable_until = start_time - timedelta(days=1)
+
+        # Save the booking
         booking = form.save()
 
-        # Save invited players
+        # Save invited players for this booking
         invited_players = form.cleaned_data.get('invited_players', [])
         for player in invited_players:
             booking.invite_player(player)
 
-        return super().form_valid(form)
+        return HttpResponseRedirect(self.success_url+ '?b_added=true')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -82,6 +115,10 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
     context_object_name = 'booking'
     success_url = reverse_lazy('booking:my_bookings')
 
+    def get_success_url(self):
+        url = super().get_success_url()
+        return f"{url}?b_deleted=true"
+    
     def get_queryset(self):
         return Booking.objects.filter(user=self.request.user)
     
@@ -176,75 +213,113 @@ def decline_invitation(request, pk):
     invitation.save()
     return redirect('booking:my_bookings')
 
-class InvitationCreateView(LoginRequiredMixin, CreateView):
-    title = 'Invite User'
-    template_name = 'invite_user_form.html'
-    success_url = reverse_lazy('booking:my_bookings')
-    form_class = CreateInvitationForm
 
-    def get_form_kwargs(self):
-        """Pass the logged-in user to the form."""
-        kwargs = super().get_form_kwargs()
-        kwargs['exclude_users'] = [self.request.user]  # Pass the logged-in user
-        return kwargs
+@login_required
+def invite_user(request, booking_id):
+    player_id = request.GET.get('player_id')  # Get the player ID from the URL
 
-    def form_valid(self, form):
-        booking_id = self.kwargs.get('booking_id')
-        booking = Booking.objects.get(id=booking_id)
-        form.instance.booking = booking
-        form.instance.inviter = self.request.user
-        return super().form_valid(form)
+    if not player_id:
+        # Redirect to the select_player page with the next parameter set to invite_user
+        return redirect(f"{reverse_lazy('booking:select_player')}?next={reverse_lazy('booking:invite_user', kwargs={'booking_id': booking_id})}")
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Invite User'
-        return context
-    
+    booking = Booking.objects.get(id=booking_id)  # Get the booking by ID
+    user = User.objects.get(id=player_id)  # Get the user by ID
+
+    # Create an invitation for the selected user
+    invitation = InvitedPlayer.objects.create(
+        booking=booking,
+        user=user,
+        status='pending',
+    )
+    return redirect('booking:my_bookings')  # Redirect to the user's bookings page
+
 ## teacher exclusive views
-
-
-
-class TeacherDashboardView(LoginRequiredMixin, CreateView):
+class CreateRecurringBookingView(GroupRequiredMixin, CreateView):
+    group_required = "teachers"
     title = 'Create Recurring Booking'
-    template_name = 'teacher_dashboard.html'
+    template_name = 'create_recurring_booking.html'
     success_url = reverse_lazy('booking:my_bookings')
     form_class = RecurringBookingForm
 
     def form_valid(self, form):
-        # Save the booking instance
         form.instance.user = self.request.user
         form.instance.until = form.cleaned_data.get('until')
-        start_time = form.instance.start_time
+        date = form.cleaned_data.get('date')  # Get the selected date
+        hour = int(form.cleaned_data.get('hour'))  # Get the selected hour
         invited_players = form.cleaned_data.get('invited_players', [])
 
+        # Use transaction.atomic to ensure all bookings are saved together
         with transaction.atomic():
-            while start_time.date() <= form.instance.until:
+            start_date = date
+            until_date = form.instance.until
+
+            while start_date <= until_date:
+                # Construct the start_time dynamically using the selected date and hour
+                naive_start_time = datetime.combine(start_date, datetime.min.time()).replace(hour=hour)
+                start_time = timezone.make_aware(naive_start_time)
+
                 # Create a new Booking instance for each week
                 booking = Booking()
                 booking.court = form.instance.court
+                booking.user = form.instance.user
                 booking.start_time = start_time
-                booking.user = self.request.user
+                booking.end_time = start_time + timedelta(hours=1)
+                booking.cancellable_until = start_time - timedelta(days=1)
+
+                print(f"Creating booking for {booking.court.name} by {booking.user.username} on {start_date} at {hour}:00")
 
                 booking.save()
-
 
                 # Save invited players for this booking
                 for player in invited_players:
                     booking.invite_player(player)
 
                 # Move to the next week
-                start_time += timedelta(weeks=1)
+                start_date += timedelta(weeks=1)
 
-        return HttpResponseRedirect(self.success_url)
-    
+        return HttpResponseRedirect(self.success_url + '?b_added=true')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Teacher Dashboard'
+        context['title'] = 'Create Recurring Booking'
         return context
 
 ## admin exclusive views
-def admin_dashboard(request):
+@login_required
+def dashboard(request):
     context = {
-        'title': 'Admin Dashboard', 
+        'title': 'Dashboard', 
     }
-    return render(request, 'admin_dashboard.html', context)
+    return render(request, 'dashboard.html', context)
+
+@staff_member_required
+def assign_teacher(request):
+    player_id = request.GET.get('player_id')  # Get the player ID from the URL
+
+    if not player_id:
+        # Redirect to the select_player page with the next parameter set to assign_teacher
+        return redirect(f"{reverse_lazy('booking:select_player')}?next={reverse_lazy('booking:assign_teacher')}")   
+
+    user = User.objects.get(id=player_id)  # Get the user by ID
+    teacher_group, created = Group.objects.get_or_create(name='teachers')  # Ensure the "teachers" group exists
+    user.groups.add(teacher_group)  # Add the user to the "teachers" group
+    return redirect(f"{reverse_lazy('booking:dashboard')}?teacher_added=true")  # Redirect to the dashboard or another page
+
+@login_required
+def select_player(request):
+    query = request.GET.get('q', '')  # Get the search query from the request
+    next_url = request.GET.get('next', reverse_lazy('booking:dashboard'))  # Get the next URL to redirect to after selection
+    booking_id = request.GET.get('booking_id')
+    players = User.objects.filter(groups__name='players')  # Filter users in the "Players" group
+
+    if query:
+        players = players.filter(username__icontains=query)  # Filter players by username
+
+    context = {
+        'title': 'Select Player',
+        'players': players,
+        'query': query,
+        'next': next_url,  # Pass the next URL to the template
+        'booking_id': booking_id,  # Pass the booking ID to the template if available
+    }
+    return render(request, 'select_player.html', context)

@@ -16,9 +16,36 @@
     </li>
     <br>
     <img src="{{ p.image.url }}" alt="Court image" style="max-width:500px;">
-    <p>{{ p.description }}</p>
     <br>
 {% endfor %}
+
+{% if request.GET.court_added %}
+
+<div id="info" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Court Added</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>The court has been successfully added.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div> 
+<script>
+  $(document).ready(function(){
+      $("#info").modal('show');
+  });
+</script>
+
+{% endif %}
 
 {% endblock %}
 

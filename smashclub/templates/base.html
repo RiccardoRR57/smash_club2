@@ -71,31 +71,24 @@
           <a class="nav-link" href="{% url 'booking:booking_calendar' %}">Bookings</a>
         </li>
 
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'matches:list' %}">Matches</a>
+        </li>
+
       </ul>
 
       <ul class="navbar-nav ml-auto">
 
         {% if user.is_authenticated %}
           {% if 'teachers' in user.groups.all.0.name or user.is_staff %}
-
             <li class="nav-item">
-              <a class="nav-link" href="{% url 'booking:teacher_dashboard' %}">Recurring Bookings</a>
+              <a class="nav-link" href="{% url 'booking:dashboard' %}">Dashboard</a>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'booking:my_bookings' %}">My Bookings</a>
             </li>
           {% endif %}
-
-          {% if user.is_staff %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'booking:admin_dashboard' %}">Admin Dashboard</a>
-            </li>
-          {% endif %}
-
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'booking:booking_create' %}">New Booking</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'booking:my_bookings' %}">My Bookings</a>
-          </li>
-          
           <li class="nav-item">
             <form method="POST" action="{% url 'logout' %}">
               {% csrf_token %}

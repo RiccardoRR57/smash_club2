@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,7 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'crispy_bootstrap4',
+    'channels',
     'booking',
+    'matches',
 ]
 
 MIDDLEWARE = [
@@ -70,7 +73,14 @@ TEMPLATES = [
     },
 ]
 
+CHANNEL_LAYERS = {
+    "default": {
+    "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
 WSGI_APPLICATION = 'smashclub.wsgi.application'
+ASGI_APPLICATION = 'smashclub.asgi.application'
 
 
 # Database
